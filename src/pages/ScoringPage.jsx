@@ -456,7 +456,7 @@ export default function ScoringPage({ onEndMatch }) {
                     <div>
                         <div className="flex items-center gap-2 mb-1">
                             <div className="w-10 h-10 rounded-lg bg-white/10 flex items-center justify-center shadow-lg border border-white/10">
-                                <img src={battingTeamId === 'team-a' ? '/A.png' : '/B.png'} alt={battingTeam.name} className="w-full h-full object-contain filter drop-shadow" />
+                                <img src={match.battingTeamId === 'team-a' ? '/A.png' : '/B.png'} alt={battingTeam.name} className="w-full h-full object-contain filter drop-shadow" />
                             </div>
                             <h2 className="text-xl font-bold text-white tracking-wide">{battingTeam.name.toUpperCase()}</h2>
                         </div>
