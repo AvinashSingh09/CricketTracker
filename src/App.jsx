@@ -7,7 +7,16 @@ import MatchSetupPage from './pages/MatchSetupPage';
 import ScoringPage from './pages/ScoringPage';
 import SummaryPage from './pages/SummaryPage';
 import HistoryPage from './pages/HistoryPage';
+import LiveViewPage from './pages/LiveViewPage';
 import './index.css';
+
+// Check if we're in live view mode
+const isLiveViewMode = () => {
+  // Check URL query param: ?live=true or hash: #/live
+  const params = new URLSearchParams(window.location.search);
+  const hash = window.location.hash;
+  return params.get('live') === 'true' || hash === '#/live' || hash.startsWith('#/live');
+};
 
 function AppContent() {
   const { match } = useApp();
@@ -94,6 +103,12 @@ function AppContent() {
 }
 
 function App() {
+  // If ?live=true or #/live, show public live view (standalone, no context needed)
+  if (isLiveViewMode()) {
+    return <LiveViewPage />;
+  }
+
+  // Otherwise, show admin interface
   return (
     <AppProvider>
       <AppContent />
