@@ -702,10 +702,10 @@ export default function ScoringPage({ onEndMatch }) {
                             {targetAchieved ? `${battingTeam.name} Wins!` : allOut ? 'Wickets Exhausted' : 'Overs Completed'}
                         </p>
                         <button
-                            onClick={handleInningsEnd}
+                            onClick={match.innings === 1 ? handleStartSecondInnings : handleEndMatch}
                             className="mt-8 w-full btn btn-primary text-lg py-4 shadow-xl shadow-emerald-500/20"
                         >
-                            Continue
+                            {match.innings === 1 ? 'Start 2nd Innings' : 'View Summary'}
                         </button>
                     </div>
                 </div>
