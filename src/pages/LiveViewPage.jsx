@@ -218,9 +218,9 @@ export default function LiveViewPage() {
                                 <div
                                     key={i}
                                     className={`w-10 h-10 rounded-full flex items-center justify-center text-sm font-bold border-2 ${ball.isWicket ? 'bg-red-500/20 border-red-500 text-red-400' :
-                                            ball.isWide || ball.isNoBall ? 'bg-yellow-500/20 border-yellow-500 text-yellow-400' :
-                                                ball.runs === 4 || ball.runs === 6 ? 'bg-emerald-500/20 border-emerald-500 text-emerald-400' :
-                                                    'bg-white/5 border-white/20 text-white'
+                                        ball.isWide || ball.isNoBall ? 'bg-yellow-500/20 border-yellow-500 text-yellow-400' :
+                                            ball.runs === 4 || ball.runs === 6 ? 'bg-emerald-500/20 border-emerald-500 text-emerald-400' :
+                                                'bg-white/5 border-white/20 text-white'
                                         }`}
                                 >
                                     {ball.isWicket ? 'W' : ball.isWide ? 'WD' : ball.isNoBall ? 'NB' : ball.runs}
@@ -285,14 +285,178 @@ export default function LiveViewPage() {
                     </div>
                 </div>
 
-                {/* Match Complete Message */}
-                {match.status === 'complete' && (
-                    <div className="card text-center py-8 bg-gradient-to-r from-emerald-900/50 to-emerald-800/50 border-emerald-500/30">
-                        <div className="text-5xl mb-4">🏆</div>
-                        <h2 className="text-2xl font-bold text-white">Match Complete</h2>
-                        <p className="text-gray-300 mt-2">Check the summary for full details</p>
-                    </div>
-                )}
+                {/* Match Complete - Full Summary */}
+                {match.status === 'complete' && (() => {
+                    // Calculate winner
+                    const firstBattingTeam = match.firstInningsScore?.battingTeamId === 'team-a' ? teams?.teamA : teams?.teamB;
+                    const secondBattingTeam = battingTeam;
+                    const firstScore = match.firstInningsScore?.runs || 0;
+                    const secondScore = match.totalRuns;
+
+                    let winnerText = 'Match Tied!';
+                    if (secondScore > firstScore) {
+                        const wicketsRemaining = (teams?.teamA?.playerIds?.length || 11) - 1 - match.wickets;
+                        winnerText = `${secondBattingTeam?.name} won by ${wicketsRemaining} wicket${wicketsRemaining !== 1 ? 's' : ''}`;
+                    } else if (firstScore > secondScore) {
+                        const runsDiff = firstScore - secondScore;
+                        winnerText = `${firstBattingTeam?.name} won by ${runsDiff} run${runsDiff !== 1 ? 's' : ''}`;
+                    }
+
+                    // Get top performers
+                    const topScorer = players.reduce((best, p) => (p.runs || 0) > (best.runs || 0) ? p : best, { runs: 0 });
+                    const topWicketTaker = players.reduce((best, p) => (p.wickets || 0) > (best.wickets || 0) ? p : best, { wickets: 0 });
+
+                    // Get team players
+                    const teamAPlayers = teams?.teamA?.playerIds?.map(id => players.find(p => p.id === id)).filter(Boolean) || [];
+                    const teamBPlayers = teams?.teamB?.playerIds?.map(id => players.find(p => p.id === id)).filter(Boolean) || [];
+
+                    return (
+                        <div className="space-y-6">
+                            {/* Winner Banner */}
+                            <div className="card text-center py-8 bg-gradient-to-r from-emerald-900/50 to-emerald-800/50 border border-emerald-500/30">
+                                <div className="text-6xl mb-4">🏆</div>
+                                <h2 className="text-3xl font-black text-white uppercase tracking-wide">{winnerText}</h2>
+                                <p className="text-gray-400 mt-2">{match.name || 'Cricket Match'}</p>
+                            </div>
+
+                            {/* Both Innings Scores */}
+                            <div className="grid grid-cols-2 gap-4">
+                                {/* First Innings */}
+                                <div className="card border-t-4 border-t-blue-500">
+                                    <div className="text-xs text-blue-400 font-bold uppercase mb-2">1st Innings</div>
+                                    <div className="flex items-center gap-3 mb-2">
+                                        <div className="w-10 h-10 bg-white/10 rounded-lg p-1 flex items-center justify-center">
+                                            <img src={match.firstInningsScore?.battingTeamId === 'team-a' ? '/A.png' : '/B.png'} alt="" className="w-full h-full object-contain" />
+                                        </div>
+                                        <h3 className="font-bold text-lg">{firstBattingTeam?.name}</h3>
+                                    </div>
+                                    <div className="flex items-baseline gap-1">
+                                        <span className="font-score text-4xl">{firstScore}</span>
+                                        <span className="font-score text-2xl text-gray-500">/{match.firstInningsScore?.wickets || 0}</span>
+                                    </div>
+                                    <div className="text-xs text-gray-500 mt-1">({formatOvers(match.firstInningsScore?.balls || 0)} overs)</div>
+                                </div>
+
+                                {/* Second Innings */}
+                                <div className="card border-t-4 border-t-yellow-500">
+                                    <div className="text-xs text-yellow-400 font-bold uppercase mb-2">2nd Innings</div>
+                                    <div className="flex items-center gap-3 mb-2">
+                                        <div className="w-10 h-10 bg-white/10 rounded-lg p-1 flex items-center justify-center">
+                                            <img src={match.battingTeamId === 'team-a' ? '/A.png' : '/B.png'} alt="" className="w-full h-full object-contain" />
+                                        </div>
+                                        <h3 className="font-bold text-lg">{secondBattingTeam?.name}</h3>
+                                    </div>
+                                    <div className="flex items-baseline gap-1">
+                                        <span className="font-score text-4xl">{secondScore}</span>
+                                        <span className="font-score text-2xl text-gray-500">/{match.wickets}</span>
+                                    </div>
+                                    <div className="text-xs text-gray-500 mt-1">({formatOvers(match.totalBalls)} overs)</div>
+                                </div>
+                            </div>
+
+                            {/* Top Performers */}
+                            {(topScorer.runs > 0 || topWicketTaker.wickets > 0) && (
+                                <div className="grid md:grid-cols-2 gap-4">
+                                    {topScorer.runs > 0 && (
+                                        <div className="card bg-gradient-to-r from-yellow-900/30 to-transparent border border-yellow-500/20">
+                                            <div className="text-xs text-yellow-400 font-bold uppercase mb-2">Top Scorer</div>
+                                            <div className="flex items-center justify-between">
+                                                <span className="font-bold text-lg">{topScorer.name}</span>
+                                                <div>
+                                                    <span className="font-score text-2xl text-yellow-300">{topScorer.runs}</span>
+                                                    <span className="text-gray-500 text-sm ml-1">({topScorer.balls})</span>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    )}
+                                    {topWicketTaker.wickets > 0 && (
+                                        <div className="card bg-gradient-to-r from-red-900/30 to-transparent border border-red-500/20">
+                                            <div className="text-xs text-red-400 font-bold uppercase mb-2">Top Wicket Taker</div>
+                                            <div className="flex items-center justify-between">
+                                                <span className="font-bold text-lg">{topWicketTaker.name}</span>
+                                                <div>
+                                                    <span className="font-score text-2xl text-red-400">{topWicketTaker.wickets}</span>
+                                                    <span className="text-gray-500 text-sm">/{topWicketTaker.runsConceded || 0}</span>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    )}
+                                </div>
+                            )}
+
+                            {/* Scorecard Tables */}
+                            <div className="space-y-6">
+                                {/* Team A Batting */}
+                                <div className="card">
+                                    <div className="flex items-center gap-3 mb-4">
+                                        <div className="w-8 h-8 bg-white/10 rounded-lg p-1">
+                                            <img src="/A.png" alt="" className="w-full h-full object-contain" />
+                                        </div>
+                                        <h4 className="font-bold text-blue-400">{teams?.teamA?.name} - Batting</h4>
+                                    </div>
+                                    <div className="overflow-x-auto">
+                                        <table className="w-full text-sm">
+                                            <thead>
+                                                <tr className="text-gray-500 text-xs uppercase border-b border-white/10">
+                                                    <th className="text-left py-2">Batsman</th>
+                                                    <th className="text-right py-2">R</th>
+                                                    <th className="text-right py-2">B</th>
+                                                    <th className="text-right py-2">4s</th>
+                                                    <th className="text-right py-2">6s</th>
+                                                </tr>
+                                            </thead>
+                                            <tbody>
+                                                {teamAPlayers.filter(p => p.balls > 0 || p.runs > 0).sort((a, b) => (b.runs || 0) - (a.runs || 0)).map(p => (
+                                                    <tr key={p.id} className="border-b border-white/5">
+                                                        <td className="py-2">{p.name} {p.isOut && <span className="text-red-400 text-xs">OUT</span>}</td>
+                                                        <td className="text-right font-score text-lg">{p.runs || 0}</td>
+                                                        <td className="text-right text-gray-400">{p.balls || 0}</td>
+                                                        <td className="text-right text-blue-400">{p.fours || 0}</td>
+                                                        <td className="text-right text-purple-400">{p.sixes || 0}</td>
+                                                    </tr>
+                                                ))}
+                                            </tbody>
+                                        </table>
+                                    </div>
+                                </div>
+
+                                {/* Team B Batting */}
+                                <div className="card">
+                                    <div className="flex items-center gap-3 mb-4">
+                                        <div className="w-8 h-8 bg-white/10 rounded-lg p-1">
+                                            <img src="/B.png" alt="" className="w-full h-full object-contain" />
+                                        </div>
+                                        <h4 className="font-bold text-yellow-400">{teams?.teamB?.name} - Batting</h4>
+                                    </div>
+                                    <div className="overflow-x-auto">
+                                        <table className="w-full text-sm">
+                                            <thead>
+                                                <tr className="text-gray-500 text-xs uppercase border-b border-white/10">
+                                                    <th className="text-left py-2">Batsman</th>
+                                                    <th className="text-right py-2">R</th>
+                                                    <th className="text-right py-2">B</th>
+                                                    <th className="text-right py-2">4s</th>
+                                                    <th className="text-right py-2">6s</th>
+                                                </tr>
+                                            </thead>
+                                            <tbody>
+                                                {teamBPlayers.filter(p => p.balls > 0 || p.runs > 0).sort((a, b) => (b.runs || 0) - (a.runs || 0)).map(p => (
+                                                    <tr key={p.id} className="border-b border-white/5">
+                                                        <td className="py-2">{p.name} {p.isOut && <span className="text-red-400 text-xs">OUT</span>}</td>
+                                                        <td className="text-right font-score text-lg">{p.runs || 0}</td>
+                                                        <td className="text-right text-gray-400">{p.balls || 0}</td>
+                                                        <td className="text-right text-blue-400">{p.fours || 0}</td>
+                                                        <td className="text-right text-purple-400">{p.sixes || 0}</td>
+                                                    </tr>
+                                                ))}
+                                            </tbody>
+                                        </table>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    );
+                })()}
             </main>
 
             {/* Footer */}
